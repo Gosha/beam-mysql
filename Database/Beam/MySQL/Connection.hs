@@ -135,23 +135,10 @@ instance MonadBeam MySQL MySQLM where
                        case d of
                          Left  e  -> throwIO e
                          Right d' -> next d' (curCol + 1) fields
-                step (PeekField next) curCol fields@((desc, field):_) =
-                    do d <- parseField desc field
-                       case d of
-                         Left {}  -> next Nothing curCol fields
-                         Right d' -> next (Just d') curCol fields
-                step (PeekField next) curCol [] =
-                    next Nothing curCol []
-                step (CheckNextNNull n next) curCol fields
-                    | n > length fields = next False curCol fields
-                    | otherwise =
-                        let areNull = all (isNothing . snd) (take n fields)
-                        in next areNull
-                                (if areNull then curCol + n else curCol)
-                                (if areNull then drop n fields else fields)
                 step (FailParseWith f) curCol _ =
-                  throwIO (CouldNotReadColumn curCol f)
+                  throwIO (CouldNotReadColumn curCol (show f))
 
+                step (Alt _ _ _) _ _ = error "Alt case not implemented. Not sure how it's supposed to work."
                 MySQLM doConsume = consume fetchRow'
 
             runReaderT doConsume (dbg, conn)
